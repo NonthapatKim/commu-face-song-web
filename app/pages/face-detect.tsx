@@ -73,81 +73,82 @@ const FaceDetectPage: React.FC = () => {
         new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.3 })
       );
 
-      const newDetectedFaces: FaceData[] = [];
-      const framePadding = 40;
+      setDetectedFaces(prevFaces => {
+        const newDetectedFaces: FaceData[] = [];
+        const framePadding = 40;
+        const maxFacesToShow = 3;
 
-      const maxFacesToShow = 3;
+        for (let i = 0; i < Math.min(detections.length, maxFacesToShow); i++) {
+          const box = detections[i].box;
 
-      for (let i = 0; i < Math.min(detections.length, maxFacesToShow); i++) {
-        const box = detections[i].box;
+          const scaledX = box.x * scale + offsetX;
+          const scaledY = box.y * scale + offsetY;
+          const scaledWidth = box.width * scale;
+          const scaledHeight = box.height * scale;
 
-        const scaledX = box.x * scale + offsetX;
-        const scaledY = box.y * scale + offsetY;
-        const scaledWidth = box.width * scale;
-        const scaledHeight = box.height * scale;
+          const flippedX = containerWidth - scaledX - scaledWidth;
 
-        const flippedX = containerWidth - scaledX - scaledWidth;
+          const currentFaceCenter = {
+            x: flippedX + scaledWidth / 2,
+            y: scaledY + scaledHeight / 2,
+          };
 
-        const currentFaceCenter = {
-          x: flippedX + scaledWidth / 2,
-          y: scaledY + scaledHeight / 2,
-        };
+          const existingFace = prevFaces.find(
+            (face) =>
+              face.lastCenter &&
+              Math.hypot(
+                currentFaceCenter.x - face.lastCenter.x,
+                currentFaceCenter.y - face.lastCenter.y
+              ) < 150
+          );
 
-        // หาข้อมูลใบหน้าเดิม ถ้ามี (ใช้ id เพื่อติดตาม)
-        const existingFace = detectedFaces.find(
-          (face) =>
-            Math.hypot(
-              currentFaceCenter.x - face.lastCenter!.x,
-              currentFaceCenter.y - face.lastCenter!.y
-            ) < 150 // กำหนดระยะห่างที่ถือว่ายังเป็นใบหน้าเดิม
-        );
+          let lyricText = existingFace ? existingFace.currentLyricText : null;
+          let songInfo = existingFace ? existingFace.currentSongInfo : null;
+          let color = existingFace ? existingFace.currentColor : `hsl(${Math.random() * 360}, 100%, 60%)`;
+          const id = existingFace ? existingFace.id : Math.random().toString(36).substring(7);
 
-        let lyricText = existingFace ? existingFace.currentLyricText : null;
-        let songInfo = existingFace ? existingFace.currentSongInfo : null;
-        let color = existingFace ? existingFace.currentColor : `hsl(${Math.random() * 360}, 100%, 60%)`;
-        const id = existingFace ? existingFace.id : Math.random().toString(36).substring(7);
+          const moved = existingFace && existingFace.lastCenter
+            ? Math.hypot(
+                currentFaceCenter.x - existingFace.lastCenter.x,
+                currentFaceCenter.y - existingFace.lastCenter.y
+              )
+            : Infinity;
 
-        const moved = existingFace
-          ? Math.hypot(
-              currentFaceCenter.x - existingFace.lastCenter!.x,
-              currentFaceCenter.y - existingFace.lastCenter!.y
-            )
-          : Infinity;
+          if (!existingFace || moved > 250) {
+            const randomLyricString =
+              mockLyrics[Math.floor(Math.random() * mockLyrics.length)];
+            const parts = randomLyricString.split(" | ");
+            lyricText = parts[0];
+            songInfo = parts.length > 1 ? parts[1] : null;
+            color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+          }
 
-        // ถ้าเป็นใบหน้าใหม่ หรือใบหน้าเดิมเคลื่อนที่ออกไปมาก (เพื่อสุ่มเพลงใหม่)
-        if (!existingFace || moved > 120) {
-          const randomLyricString =
-            mockLyrics[Math.floor(Math.random() * mockLyrics.length)];
-          const parts = randomLyricString.split(" | ");
-          lyricText = parts[0];
-          songInfo = parts.length > 1 ? parts[1] : null;
-          color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+          newDetectedFaces.push({
+            id: id,
+            boxStyle: {
+              position: "absolute",
+              left: `${flippedX - framePadding / 2}px`,
+              top: `${scaledY - framePadding / 2}px`,
+              width: `${scaledWidth + framePadding}px`,
+              height: `${scaledHeight + framePadding}px`,
+              border: `3px solid ${color}`,
+              borderRadius: "8px",
+              transition: "all 0.1s linear",
+            },
+            currentLyricText: lyricText,
+            currentSongInfo: songInfo,
+            currentColor: color,
+            lastCenter: currentFaceCenter,
+          });
         }
+        
+        return newDetectedFaces;
+      });
 
-        newDetectedFaces.push({
-          id: id,
-          boxStyle: {
-            position: "absolute",
-            left: `${flippedX - framePadding / 2}px`,
-            top: `${scaledY - framePadding / 2}px`,
-            width: `${scaledWidth + framePadding}px`,
-            height: `${scaledHeight + framePadding}px`,
-            border: `3px solid ${color}`,
-            borderRadius: "8px",
-            transition: "all 0.1s linear",
-          },
-          currentLyricText: lyricText,
-          currentSongInfo: songInfo,
-          currentColor: color,
-          lastCenter: currentFaceCenter,
-        });
-      }
-
-      setDetectedFaces(newDetectedFaces);
     }, 200);
 
     return () => clearInterval(interval);
-  }, [modelsLoaded, detectedFaces]);
+  }, [modelsLoaded]);
 
   const goFullScreen = () => {
     const container = mainContainerRef.current;
