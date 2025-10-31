@@ -1,3 +1,3 @@
 # COMMU Face Song 🎵
 
-For COMMU Booth in SWU Open house 2025
+For Computer Innovation for Communication booth at College of Social Communication Innovation in SWU Open House 2025.
