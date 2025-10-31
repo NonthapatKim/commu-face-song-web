@@ -256,7 +256,7 @@ const FaceDetectPage: React.FC = () => {
         width={350}
         height={150}
         alt="Commu-Cosci Logo"
-        className="absolute bottom-2 left-1/2 -translate-x-1/2 z-40 w-64 opacity-100"
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 z-40 w-72 opacity-100"
       />
     </div>
   );
